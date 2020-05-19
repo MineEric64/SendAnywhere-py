@@ -72,7 +72,9 @@ class SendClass:
         files: dict = dict()
 
         headers: dict = {
-            'cookie': 'device_key=3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb; access_token=NTQ3NDM2NTkzNTI1MzoxNTg5MTI2MDI3Mzcw; _gat=1'
+            'cookie': 'device_key=3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb; access_token=NTQ3NDM2NTkzNTI1MzoxNTg5MTI2MDI3Mzcw; _gat=1',
+            'Content-Disposition': 'attachment; filename="hello.png"',
+            'Access-Control-Expose-Headers': 'Content-Disposition'
         }
 
         for i in range(0, len(self.__file_paths)):
@@ -81,7 +83,7 @@ class SendClass:
 
             files[file_name] = open(file_path, 'rb')
 
-        r = requests.post('https://send-anywhere.com/web/key', headers=headers, files={"hello.png": open("hello.png", 'rb')}, data={'file': [{'name': "hello.png", 'size': 675719}], 'mode': "direct", 'nolog': True, 'pass_recaptcha': True})
+        r = requests.post('https://send-anywhere.com/web/key', headers=headers, data=f)
         json_data = r.json()
 
         if 'key' in json_data:
@@ -101,7 +103,6 @@ class SendClass:
         link = link[0:link.index('/api/') + 5] + 'session_start/{}?device_key={}'.format(self.key, '3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb')
 
         request = requests.post(link)
-        print(request.status_code)
         print(request.json())
 
         return json_data
