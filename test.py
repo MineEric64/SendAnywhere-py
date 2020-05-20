@@ -26,7 +26,7 @@ def test_recieve():
             return
 
         if test_file_name == "":
-            test_file_name = req.headers['Content-Disposition'].split("filename=")[1].strip('"')
+            test_file_name = encode_with_file_name(req.headers['Content-Disposition'].split("filename=")[1].strip('"'))
             print(test_file_name)
 
         #open(test_file_name, 'wb').write(req.content)
@@ -49,14 +49,8 @@ def test_send():
     print(key)
     print(error)
 
+def encode_with_file_name(text: str) -> str:  # "2119ë ê°ë½ì¤íêµ íêµ.mp3"
+    return text.encode("ISO-8859-1").decode("utf-8")
+
 test_send()
 #test_recieve()
-
-# text = "2119ë ê°ë½ì¤íêµ íêµ.mp3"
-# text2 = "2119년 가락중학교 폐교.mp3"
-#
-# # for i in range(0, len(text)):
-# #     print("{0:b}".format(ord(text[i])))
-#
-# for i in range(0, len(text)):
-#     print(ord(text[i]))

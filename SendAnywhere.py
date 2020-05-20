@@ -77,13 +77,15 @@ class SendClass:
             'Access-Control-Expose-Headers': 'Content-Disposition'
         }
 
+        payload: dict = {'"file"':[{'"name"':'"hello.png"','"size"':675719}],'"mode"':'"direct"','"nolo"':True,'"pass_recaptcha"':True}
+
         for i in range(0, len(self.__file_paths)):
             file_path = self.__file_paths[i]
             file_name = os.path.basename(file_path)
 
             files[file_name] = open(file_path, 'rb')
 
-        r = requests.post('https://send-anywhere.com/web/key', headers=headers, data=f)
+        r = requests.post('https://send-anywhere.com/web/key', headers=headers, files={'file': open('hello.png', 'rb')}, params=payload)
         json_data = r.json()
 
         if 'key' in json_data:
@@ -100,9 +102,12 @@ class SendClass:
 
         #  request send started
         link: str = str(json_data['weblink'])
+        print(link)
         link = link[0:link.index('/api/') + 5] + 'session_start/{}?device_key={}'.format(self.key, '3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb')
 
-        request = requests.post(link)
+        payload = {'"file"':[{'"name"':'"hello.png"','"size"':675719}]}
+        request = requests.get(link, params=payload)
+
         print(request.json())
 
         return json_data
