@@ -2,6 +2,115 @@ import os
 import requests
 import json
 
+import datetime
+import asyncio
+
+class SendClass:
+    key: int = -1
+    __file_paths: list
+
+    __device_key: str
+    __default_device_key = '3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb'
+    __session_start_link: str
+
+    error_dict = {}
+    error_message = "None"
+
+    def __init__(self, path: list, device_key: str = __default_device_key):
+        self.__file_paths = path
+        self.__device_key = device_key
+
+    def send(self):
+        self.__send()
+
+    def send_with_key(self) -> int:
+        self.__send()
+        return self.key
+
+    def send_with_key_to_string(self) -> str:
+        self.__send()
+        return self.get_key_to_string()
+
+    def send_with_verbose(self):
+        return self.__send()
+
+    def __send(self) -> dict:
+        '''
+        Send and Upload file(s) To Send-Anywhere File Server.
+
+        :return: returns json (dictionary type)
+        '''
+
+        files = {}
+
+        headers = {
+            'cookie': f'device_key={self.__device_key}; access_token=NTQ3NDM2NTkzNTI1MzoxNTg5MTI2MDI3Mzcw; _gat=1',
+        }
+
+        # for i in range(0, len(self.__file_paths)):
+        #     file_path = self.__file_paths[i]
+        #     file_name = os.path.basename(file_path)
+        #
+        #     files[file_name] = open(file_path, 'rb')
+
+        req = requests.post('https://send-anywhere.com/web/key', headers=headers, files={"file": open("hello.png", "rb")}, json={"file":[{"name": "hello.png", "size": os.stat("hello.png").st_size}]})
+        json_data = req.json()
+
+        if 'key' in json_data:
+            self.key = int(json_data['key'])
+
+            self.error_dict = {}
+            self.error_message = "None"
+        elif 'error' in json_data:
+            self.key = -1
+
+            self.error_dict = json_data
+            self.error_message = f"error: {str(json_data['error'])}"
+            return json_data
+
+        link: str = str(json_data['weblink'])
+        self.__session_start_link = f"{link[0:link.index('/api/') + 5]}session_start/{self.get_key_to_string()}"
+
+        return json_data
+
+    def fetch(self):
+        '''
+        fetch file(s) to Send-Anywhere Server. You must fetch them before recieve (or download) them. (Synchronous)
+        '''
+        self.__upload_for_fetch()
+
+    async def fetch_async(self):
+        '''
+        fetch file(s) to Send-Anywhere Server. You must fetch them before recieve (or download) them. (Asynchronous)
+        '''
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, self.__upload_for_fetch)
+
+    def __upload_for_fetch(self):
+        session_link = self.__session_start_link.replace("/session_start/", "/session/", 1)
+        session_finish_link = self.__session_start_link.replace("/session_start/", "/session_finish/", 1)
+        data_upload_link = f'{session_link[:session_link.index("/session/") + 9]}file/'
+        file_key: str
+
+        req_session_start = requests.get(self.__session_start_link, params={'device_key': self.__device_key}, json={"file": [{"name": "hello.png", "size": os.stat("hello.png").st_size}]})
+        file_key = req_session_start.json()['file'][0]['key']
+        data_upload_link += file_key
+
+        requests.post(data_upload_link, params={'device_key': self.__device_key, 'offset': 0}, files={"file" : open('hello.png', 'rb')})
+
+        requests.get(session_link, params={'device_key': self.__device_key, 'mode': 'status', '_': int(datetime.datetime.utcnow().timestamp())})
+        requests.get(session_finish_link, params={'device_key': self.__device_key, 'mode': 'status', '_': int(datetime.datetime.utcnow().timestamp())})
+
+    def get_key_to_string(self) -> str:
+        return str(self.key).zfill(6)
+
+    def has_error(self) -> bool:
+        return self.error_message is not "None" or len(self.error_dict) is not 0
+
+    def raise_for_error(self):
+        if self.has_error():
+            raise ValueError("Error occured.")
+
 class RecieveClass:
     __key: int
 
@@ -30,84 +139,13 @@ class RecieveClass:
             'cookie': 'device_key=3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb; access_token=NTQ3NDM2NTkzNTI1MzoxNTg5MTI2MDI3Mzcw; _gat=1'
         }
 
-        request = requests.post('https://send-anywhere.com/web/key/search/' + str(self.__key).zfill(6), headers=headers)
+        request = requests.post(f'https://send-anywhere.com/web/key/search/{self.get_key_to_string()}', headers=headers)
         return request.json()
 
-class SendClass:
-    key: int = -1
-    __file_paths: list
-
-    error_dict: dict = dict()
-    error_message: str = "None"
-
-    def __init__(self, path: list):
-        self.__file_paths = path
-
-    def send_file_with_key(self) -> int:
+    def get_key_to_string(self):
         '''
-        Send file(s) to send anywhere server and get key.
+        Get Key with String.
 
-        :return: returns key number.
+        :return: returns key with string.
         '''
-
-        self.__send_file()
-        return self.key
-
-    def send_file_with_verbose(self) -> dict:
-        '''
-        Send file(s) with Verbose (advanced option)
-
-        :return: returns json (dictionary type)
-        '''
-
-        return self.__send_file()
-
-    def __send_file(self) -> dict:
-        '''
-        Send file(s).
-
-        :return: returns json (dictionary type)
-        '''
-
-        files: dict = dict()
-
-        headers: dict = {
-            'cookie': 'device_key=3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb; access_token=NTQ3NDM2NTkzNTI1MzoxNTg5MTI2MDI3Mzcw; _gat=1',
-            'Content-Disposition': 'attachment; filename="hello.png"',
-            'Access-Control-Expose-Headers': 'Content-Disposition'
-        }
-
-        payload: dict = {'"file"':[{'"name"':'"hello.png"','"size"':675719}],'"mode"':'"direct"','"nolo"':True,'"pass_recaptcha"':True}
-
-        for i in range(0, len(self.__file_paths)):
-            file_path = self.__file_paths[i]
-            file_name = os.path.basename(file_path)
-
-            files[file_name] = open(file_path, 'rb')
-
-        r = requests.post('https://send-anywhere.com/web/key', headers=headers, files={'file': open('hello.png', 'rb')}, params=payload)
-        json_data = r.json()
-
-        if 'key' in json_data:
-            self.key = json_data['key']
-
-            self.error_dict = dict()
-            self.error_message = "None"
-        elif 'error' in json_data:
-            self.key = -1
-
-            self.error_dict = json_data
-            self.error_message = "error: " + str(json_data['error'])
-            return json_data
-
-        #  request send started
-        link: str = str(json_data['weblink'])
-        print(link)
-        link = link[0:link.index('/api/') + 5] + 'session_start/{}?device_key={}'.format(self.key, '3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb')
-
-        payload = {'"file"':[{'"name"':'"hello.png"','"size"':675719}]}
-        request = requests.get(link, params=payload)
-
-        print(request.json())
-
-        return json_data
+        return str(self.__key).zfill(6)
