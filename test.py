@@ -53,7 +53,7 @@ def test_recieve():
             test_file_name = encode_with_file_name(req.headers['Content-Disposition'].split("filename=")[1].strip('"'))
             print(test_file_name)
 
-        #open(test_file_name, 'wb').write(req.content)
+        open(test_file_name, 'wb').write(req.content)
 
 def encode_with_file_name(text: str) -> str:  # "2119ë ê°ë½ì¤íêµ íêµ.mp3"
     return text.encode("ISO-8859-1").decode("utf-8")

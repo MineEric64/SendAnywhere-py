@@ -7,7 +7,11 @@ import asyncio
 
 class SendClass:
     key: int = -1
+
     __file_paths: list
+    __requests_files = []
+    __requests_files_payload = {"file": []}
+    __file_names = {}
 
     __device_key: str
     __default_device_key = '3c1f66d0dda7282d49c740d5e938a7caa2c0af60a3731de17677f007811753eb'
@@ -41,19 +45,20 @@ class SendClass:
         :return: returns json (dictionary type)
         '''
 
-        files = {}
-
         headers = {
             'cookie': f'device_key={self.__device_key}; access_token=NTQ3NDM2NTkzNTI1MzoxNTg5MTI2MDI3Mzcw; _gat=1',
         }
 
-        # for i in range(0, len(self.__file_paths)):
-        #     file_path = self.__file_paths[i]
-        #     file_name = os.path.basename(file_path)
-        #
-        #     files[file_name] = open(file_path, 'rb')
+        for x in self.__file_paths:
+            file_name = os.path.basename(x)
+            file_size = os.stat(x).st_size
 
-        req = requests.post('https://send-anywhere.com/web/key', headers=headers, files={"file": open("hello.png", "rb")}, json={"file":[{"name": "hello.png", "size": os.stat("hello.png").st_size}]})
+            self.__requests_files_payload['file'].append({"name": file_name, "size": file_size})
+            self.__file_names[file_name] = x
+
+        self.__requests_files = [('file', open(f, 'rb')) for f in self.__file_paths]
+
+        req = requests.post('https://send-anywhere.com/web/key', headers=headers, json=self.__requests_files_payload)
         json_data = req.json()
 
         if 'key' in json_data:
@@ -90,13 +95,25 @@ class SendClass:
         session_link = self.__session_start_link.replace("/session_start/", "/session/", 1)
         session_finish_link = self.__session_start_link.replace("/session_start/", "/session_finish/", 1)
         data_upload_link = f'{session_link[:session_link.index("/session/") + 9]}file/'
-        file_key: str
 
-        req_session_start = requests.get(self.__session_start_link, params={'device_key': self.__device_key}, json={"file": [{"name": "hello.png", "size": os.stat("hello.png").st_size}]})
-        file_key = req_session_start.json()['file'][0]['key']
-        data_upload_link += file_key
+        req_session_start = requests.get(self.__session_start_link, params={'device_key': self.__device_key}, json=self.__requests_files_payload)
+        key_data = req_session_start.json()
 
-        requests.post(data_upload_link, params={'device_key': self.__device_key, 'offset': 0}, files={"file" : open('hello.png', 'rb')})
+        for x in key_data['file']:
+            file = {
+                'key': x['key'],
+                'name': x['name'],
+            }
+            file['path'] = self.__file_names[file['name']]
+            file['data'] = open(file['path'], 'rb')
+
+            try:
+                requests.post(data_upload_link + file['key'], params={'device_key': self.__device_key, 'offset': 0}, files={'file': file['data']})
+            except requests.exceptions.ConnectionError as e:
+                if str(e) == "('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))":
+                    pass
+                else:
+                    raise requests.exceptions.ConnectionError(str(e))
 
         requests.get(session_link, params={'device_key': self.__device_key, 'mode': 'status', '_': int(datetime.datetime.utcnow().timestamp())})
         requests.get(session_finish_link, params={'device_key': self.__device_key, 'mode': 'status', '_': int(datetime.datetime.utcnow().timestamp())})
