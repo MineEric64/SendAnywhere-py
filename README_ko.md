@@ -108,3 +108,21 @@ def test_recieve():
 def encode_with_file_name(text: str) -> str:
     return text.encode("ISO-8859-1").decode("utf-8")
 ```
+
+### 개발 비화
+비공식 Send Anywhere API를 만든 계기는 대용량 파일을 폰과 컴퓨터에 보내고 받기 위해 만들게 되었습니다.
+
+원래 Send Anywhere 프로그램을 쓰면 됐지만 Send Anywhere 프로그램 내장 광고가 조금 거슬리기도 했고
+
+무엇보다 제가 만든 프로그램에서 Send Anywhere 프로그램을 키지 않고도 바로 한 번 클릭에 파일이 공유가 되게 만들고 싶었습니다.
+
+- 그러면 그냥 공식 API를 사용하면 되지 않나?
+라고 생각하시겠지만,
+
+**맞습니다.**
+
+하지만 그래도 제가 직접 Send Anywhere을 뜯어보며 제가 직접 저의 손으로 API를 만들어보고 싶었습니다.
+
+Send Anywhere 개발자님, 죄송합니다. 문제 시 Repository는 삭제하도록 하겠습니다.
+
+- [더 자세한 개발 비화가 궁금하신가요?](https://github.com/Luigi38/MyPortfolio#send-anywhere-%EB%B9%84%EA%B3%B5%EC%8B%9D-api)
