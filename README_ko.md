@@ -109,7 +109,7 @@ def encode_with_file_name(text: str) -> str:
     return text.encode("ISO-8859-1").decode("utf-8")
 ```
 
-### 개발 비화
+## 개발 비화
 비공식 Send Anywhere API를 만든 계기는 대용량 파일을 폰과 컴퓨터에 보내고 받기 위해 만들게 되었습니다.
 
 원래 Send Anywhere 프로그램을 쓰면 됐지만 Send Anywhere 프로그램 내장 광고가 조금 거슬리기도 했고
